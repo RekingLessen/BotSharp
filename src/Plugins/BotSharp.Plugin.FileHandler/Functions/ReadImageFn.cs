@@ -1,3 +1,5 @@
+using BotSharp.Abstraction.Routing;
+
 namespace BotSharp.Plugin.FileHandler.Functions;
 
 public class ReadImageFn : IFunctionCallback
@@ -20,6 +22,7 @@ public class ReadImageFn : IFunctionCallback
     {
         var args = JsonSerializer.Deserialize<LlmContextIn>(message.FunctionArgs);
         var conv = _services.GetRequiredService<IConversationService>();
+        var routingCtx = _services.GetRequiredService<IRoutingContext>();
         var agentService = _services.GetRequiredService<IAgentService>();
 
         Agent? fromAgent = null;
@@ -28,8 +31,6 @@ public class ReadImageFn : IFunctionCallback
             fromAgent = await agentService.LoadAgent(message.CurrentAgentId);
         }
 
-        var wholeDialogs = conv.GetDialogHistory();
-        var dialogs = AssembleFiles(conv.ConversationId, args?.ImageUrls, wholeDialogs);
         var agent = new Agent
         {
             Id = BuiltInAgentId.UtilityAssistant,
@@ -38,6 +39,13 @@ public class ReadImageFn : IFunctionCallback
             TemplateDict = new Dictionary<string, object>()
         };
 
+        var wholeDialogs = routingCtx.GetDialogs();
+        if (wholeDialogs.IsNullOrEmpty())
+        {
+            wholeDialogs = conv.GetDialogHistory();
+        }
+
+        var dialogs = AssembleFiles(conv.ConversationId, args?.ImageUrls, wholeDialogs);
         var response = await GetChatCompletion(agent, dialogs);
         message.Content = response;
         return true;
@@ -73,7 +81,7 @@ public class ReadImageFn : IFunctionCallback
 
         if (!imageUrls.IsNullOrEmpty())
         {
-            var lastDialog = dialogs.Last();
+            var lastDialog = dialogs.LastOrDefault(x => x.Role == AgentRole.User) ?? dialogs.Last();
             var files = lastDialog.Files ?? [];
             var addnFiles = imageUrls.Select(x => x?.Trim())
                                      .Where(x => !string.IsNullOrWhiteSpace(x))
