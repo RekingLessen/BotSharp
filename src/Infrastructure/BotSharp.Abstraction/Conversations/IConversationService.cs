@@ -1,9 +1,11 @@
 using BotSharp.Abstraction.Loggers.Models;
+using BotSharp.Abstraction.Utilities;
 using BotSharp.Abstraction.Repositories.Filters;
+using BotSharp.Abstraction.Shared;
 
 namespace BotSharp.Abstraction.Conversations;
 
-public interface IConversationService
+public interface IConversationService: IHaveServiceProvider
 {
     IConversationStateService States { get; }
     string ConversationId { get; }

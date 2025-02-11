@@ -1,22 +1,23 @@
 using BotSharp.Abstraction.Conversations.Enums;
 using BotSharp.Abstraction.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace BotSharp.Core.Conversations.Services;
-
 public partial class ConversationService : IConversationService
 {
     private readonly ILogger _logger;
-    private readonly IServiceProvider _services;
+    protected readonly IServiceProvider _services;
     private readonly IUserIdentity _user;
     private readonly ConversationSetting _settings;
     private readonly IConversationStorage _storage;
     private readonly IConversationStateService _state;
     private string _conversationId;
     private const string AIAssistant = BuiltInAgentId.AIAssistant;
-
     public string ConversationId => _conversationId;
 
     public IConversationStateService States => _state;
+
+    public IServiceProvider ServiceProvider => _services;
 
     public ConversationService(
         IServiceProvider services,
@@ -71,6 +72,7 @@ public partial class ConversationService : IConversationService
         return db.UpdateConversationMessage(conversationId, request);
     }
 
+    [SharpAspect]
     public async Task<Conversation> GetConversation(string id)
     {
         var db = _services.GetRequiredService<IBotSharpRepository>();
